@@ -2,6 +2,10 @@ import About from "@/components/About";
 import Who from "@/components/Who";
 import { useState } from "react";
 import HomePage from "./HomePage";
+import Skills from "../Skills";
+import Work from "../Works";
+import Contacts from "../Contacts";
+import Project from "../Projects";
 
 export default function AboutPage() {
   const [isOpenWho, setIsOpenWho] = useState(false);
@@ -24,28 +28,28 @@ export default function AboutPage() {
         toggleOpen={() => setIsOpenSkills((prev) => !prev)}
         iconSrc="/pngs/skill.png"
         title="Skills"
-        renderContent={() => <Who />}
+        renderContent={() => <Skills />}
       />
       <About
         isOpen={isOpenProject}
         toggleOpen={() => setIsOpenProject((prev) => !prev)}
         iconSrc="/pngs/projects.png"
         title="Projects"
-        renderContent={() => <Who />}
+        renderContent={() => <Project />}
       />
       <About
         isOpen={isOpenWork}
         toggleOpen={() => setIsOpenWork((prev) => !prev)}
         iconSrc="/pngs/work.png"
         title="Work"
-        renderContent={() => <Who />}
+        renderContent={() => <Work />}
       />
       <About
         isOpen={isOpenContact}
         toggleOpen={() => setIsOpenContact((prev) => !prev)}
         iconSrc="/pngs/call.png"
         title="Contacts"
-        renderContent={() => <Who />}
+        renderContent={() => <Contacts />}
       />
     </div>
   );
