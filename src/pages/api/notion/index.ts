@@ -116,13 +116,13 @@ export default async function handler(
           if (!isBlockObjectResponse(block)) {
             return { type: 'unsupported' };
           }
-        
+
           const contentBlock: BlogContentBlock = { type: block.type };
-        
+
           // 🔥 Correctly extract rich_text from block[block.type]
           const blockContent = (block as any)[block.type];
           const richText = blockContent?.rich_text;
-        
+
           if (Array.isArray(richText)) {
             contentBlock.rich_text = richText.map((t: RichTextItemResponse) => ({
               text: t.plain_text,
@@ -130,10 +130,10 @@ export default async function handler(
               link: t.type === 'text' ? t.text.link?.url || null : t.href || null,
             }));
           }
-        
+
           return contentBlock;
-        });        
-        
+        });
+
         const firstTextBlock = orderedContent.find(
           (block) => {
             return block.type === 'heading_3' &&
@@ -141,10 +141,15 @@ export default async function handler(
               block.rich_text.length > 0;
           }
         );
-        
-        const summary = firstTextBlock
-          ? firstTextBlock.rich_text?.map(rt => rt.text).join(' ')
-          : 'No summary available';
+
+        let summary = 'No summary available';
+
+        if (firstTextBlock && firstTextBlock.rich_text?.length) {
+          const fullText = firstTextBlock.rich_text.map(rt => rt.text).join(' ').trim();
+          const words = fullText.split(/\s+/);
+          summary = words.length > 20 ? words.slice(0, 20).join(' ') + '...' : fullText;
+        }
+
 
         const wordCount = orderedContent.reduce((count, block) => {
           if (block.rich_text) {

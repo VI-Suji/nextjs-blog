@@ -13,8 +13,8 @@ export default function PostSkeleton({
     <div className="flex flex-col lg:flex-row w-full border-4 rounded-2xl h-auto lg:h-[200px] mb-2 text-black animate-pulse bg-gray-200">
       <div className="flex flex-row lg:flex-col w-full lg:w-1/6 lg:m-4 p-2 lg:p-0 gap-2">
         <div className="flex w-full lg:h-1/4 gap-2">
-          <div className="w-1/2 bg-gray-300 h-10 rounded-xl"></div>
-          <div className="w-1/2 bg-gray-300 h-10 rounded-xl"></div>
+          <div className="w-1/2 bg-gray-300 h-12 sm:h-10 rounded-xl"></div>
+          <div className="w-1/2 bg-gray-300 h-12 sm:h-10 rounded-xl"></div>
         </div>
         <div className="w-full lg:h-3/4 bg-gray-300 h-12 rounded-xl"></div>
       </div>
