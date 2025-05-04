@@ -144,7 +144,7 @@ export default async function handler(
             }
             return count;
         }, 0);
-        const readTime = `${Math.max(1, Math.round(wordCount / 50))} min read`;
+        const readTime = `${Math.max(1, Math.round(wordCount / 70))} min read`;
 
         // Construct the blog post response object
         const blogPost: BlogPost = {

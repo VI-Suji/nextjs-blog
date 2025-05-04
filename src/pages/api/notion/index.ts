@@ -32,7 +32,7 @@ type BlogPost = {
   icon: string | null;
   createdTime: string;
   lastEditedTime: string;
-  summary: string;
+  summary: string | undefined;
   readTime: string;
   content: BlogContentBlock[];
 };
@@ -113,85 +113,38 @@ export default async function handler(
         });
 
         const orderedContent: BlogContentBlock[] = childPageContent.results.map((block) => {
-          // Ensure block is a BlockObjectResponse
           if (!isBlockObjectResponse(block)) {
             return { type: 'unsupported' };
           }
-
+        
           const contentBlock: BlogContentBlock = { type: block.type };
-
-          // Handle text-based blocks (e.g., paragraph, heading_1, heading_2, etc.)
-          if (
-            block.type === 'paragraph' ||
-            block.type === 'heading_1' ||
-            block.type === 'heading_2' ||
-            block.type === 'heading_3' ||
-            block.type === 'quote' ||
-            block.type === 'callout' ||
-            block.type === 'bulleted_list_item' ||
-            block.type === 'numbered_list_item' ||
-            block.type === 'to_do' ||
-            block.type === 'toggle'
-          ) {
-            // Check for the existence of rich_text property
-            if ('rich_text' in block) {
-              const richText = block.rich_text;
-              if (Array.isArray(richText)) {
-                contentBlock.rich_text = richText.map((t: RichTextItemResponse) => {
-                  let link: string | null = null;
-                  if (t.type === 'text') {
-                    link = t.text.link?.url || null;
-                  } else {
-                    link = t.href || null;
-                  }
-
-                  return {
-                    text: t.plain_text,
-                    annotations: t.annotations,
-                    link,
-                  };
-                });
-              }
-            }
-          }
-
-          // Handle code blocks
-          if (block.type === 'code') {
-            contentBlock.language = block.code.language;
-            const richText = block.code.rich_text;
+        
+          // 🔥 Correctly extract rich_text from block[block.type]
+          const blockContent = (block as any)[block.type];
+          const richText = blockContent?.rich_text;
+        
+          if (Array.isArray(richText)) {
             contentBlock.rich_text = richText.map((t: RichTextItemResponse) => ({
               text: t.plain_text,
               annotations: t.annotations,
               link: t.type === 'text' ? t.text.link?.url || null : t.href || null,
             }));
           }
-
-          // Handle media blocks (image, video, file, pdf)
-          if (['image', 'file', 'video', 'pdf'].includes(block.type)) {
-            let media: any;  // To hold the media block content
-            if (block.type === 'image') {
-              media = block.image;
-            } else if (block.type === 'file') {
-              media = block.file;
-            } else if (block.type === 'video') {
-              media = block.video;
-            } else if (block.type === 'pdf') {
-              media = block.pdf;
-            }
-
-            const source = media?.[media.type]; // e.g., media.url for 'file' or 'image'
-            contentBlock.url = source?.url || null;
-            contentBlock.caption = media.caption?.map((t: any) => t.plain_text).join('') || '';
-          }
-
+        
           return contentBlock;
-        });
-
-        const firstHeading = orderedContent.find(
-          (block) => (block.type === 'heading_3' || block.type === 'paragraph') && block.rich_text
+        });        
+        
+        const firstTextBlock = orderedContent.find(
+          (block) => {
+            return block.type === 'heading_3' &&
+              block.rich_text &&
+              block.rich_text.length > 0;
+          }
         );
-
-        const summary = firstHeading?.rich_text?.map(rt => rt.text).join(' ') || 'No summary available';
+        
+        const summary = firstTextBlock
+          ? firstTextBlock.rich_text?.map(rt => rt.text).join(' ')
+          : 'No summary available';
 
         const wordCount = orderedContent.reduce((count, block) => {
           if (block.rich_text) {
@@ -200,7 +153,7 @@ export default async function handler(
           }
           return count;
         }, 0);
-        const readTime = `${Math.max(1, Math.round(wordCount / 50))} min read`;
+        const readTime = `${Math.max(1, Math.round(wordCount / 70))} min read`;
 
         // Ensure that `block.child_page?.title` is only accessed for blocks of type `child_page`
         const title = block.type === 'child_page' ? block.child_page?.title || 'Untitled' : 'Not a child page';
