@@ -146,6 +146,13 @@ export default function BlogContent() {
           </blockquote>
         );
 
+      case 'bulleted_list_item':
+        return (
+          <ul key={index} className="list-disc list-inside text-white mx-5 my-0 sm:mx-20">
+            <li>{renderText(block.rich_text || [])}</li>
+          </ul>
+        );
+
       default:
         return null;
     }
