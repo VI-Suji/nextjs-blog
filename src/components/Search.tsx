@@ -13,7 +13,7 @@ export default function Search() {
                 />
                 <input
                     type="text"
-                    placeholder="Find out anything you want"
+                    placeholder="Not yet implemented"
                     className="flex-grow outline-none bg-transparent text-lg sm:text-2xl md:text-3xl text-white mx-2"
                 />
             </div>

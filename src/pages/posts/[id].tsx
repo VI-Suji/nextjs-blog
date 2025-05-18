@@ -185,7 +185,7 @@ export default function BlogContent() {
                     />
                   </div>
                 )}
-                <h1 className="text-5xl font-semibold text-center">{post?.title}</h1>
+                <h1 className="text-5xl font-semibold text-center">{post?.title.replace(/^\[.*?\]\s*/, '')}</h1>
                 {post && (
                   <p className="text-lg text-gray-500 mt-2">
                     {`${formatDate(post.createdTime)} • ${post.readTime}`}

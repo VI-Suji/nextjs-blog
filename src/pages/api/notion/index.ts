@@ -8,7 +8,7 @@ import {
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const notion = new Client({
-  auth: process.env.NOTION_API_KEY || '', // Replace with actual API key
+  auth: process.env.NOTION_API_KEY || '',
 });
 
 type FormattedText = {
@@ -32,9 +32,10 @@ type BlogPost = {
   icon: string | null;
   createdTime: string;
   lastEditedTime: string;
-  summary: string | undefined;
+  summary: string;
   readTime: string;
   content: BlogContentBlock[];
+  category: string;
 };
 
 type ApiResponse = {
@@ -54,6 +55,7 @@ export default async function handler(
 
   const page = parseInt(req.query.page as string) || 1;
   const postsPerPage = 3;
+  const categoryFilter = req.query.category as string | undefined;
 
   try {
     const response = await notion.blocks.children.list({
@@ -64,17 +66,8 @@ export default async function handler(
       (block): block is BlockObjectResponse => isBlockObjectResponse(block) && block.type === 'child_page'
     );
 
-    const totalPosts = childPages.length;
-    const totalPages = Math.ceil(totalPosts / postsPerPage);
-
-    const currentPage = Math.min(Math.max(page, 1), totalPages);
-
-    const startIdx = (currentPage - 1) * postsPerPage;
-    const endIdx = startIdx + postsPerPage;
-    const paginatedChildPages = childPages.slice(startIdx, endIdx);
-
-    const childPageDetails: BlogPost[] = await Promise.all(
-      paginatedChildPages.map(async (block) => {
+    const allChildPageDetails: BlogPost[] = await Promise.all(
+      childPages.map(async (block) => {
         const childPageId = block.id;
 
         const pageInfo = await notion.pages.retrieve({
@@ -84,8 +77,8 @@ export default async function handler(
         const createdTime = pageInfo.created_time;
         const lastEditedTime = pageInfo.last_edited_time;
 
+        // Extract cover
         let cover: string | null = null;
-
         if (pageInfo.cover) {
           if (pageInfo.cover.type === 'external') {
             cover = pageInfo.cover.external.url;
@@ -94,8 +87,8 @@ export default async function handler(
           }
         }
 
+        // Extract icon
         let icon: string | null = null;
-
         if (pageInfo.icon) {
           if (pageInfo.icon.type === 'emoji') {
             icon = pageInfo.icon.emoji;
@@ -103,23 +96,27 @@ export default async function handler(
             icon = pageInfo.icon.external.url;
           } else if (pageInfo.icon.type === 'file') {
             icon = pageInfo.icon.file.url;
-          } else {
-            icon = null;
           }
         }
 
+        // Extract and parse title + category
+        const rawTitle =
+        block.type === 'child_page' && block.child_page?.title
+          ? block.child_page.title
+          : 'Untitled';
+        const titleMatch = rawTitle.match(/^\[(.*?)\]\s*(.*)$/);
+        const category = titleMatch?.[1] || 'Uncategorized';
+        const title = titleMatch?.[2] || rawTitle;
+
+        // Fetch content blocks
         const childPageContent = await notion.blocks.children.list({
           block_id: childPageId,
         });
 
         const orderedContent: BlogContentBlock[] = childPageContent.results.map((block) => {
-          if (!isBlockObjectResponse(block)) {
-            return { type: 'unsupported' };
-          }
+          if (!isBlockObjectResponse(block)) return { type: 'unsupported' };
 
           const contentBlock: BlogContentBlock = { type: block.type };
-
-          // 🔥 Correctly extract rich_text from block[block.type]
           const blockContent = (block as any)[block.type];
           const richText = blockContent?.rich_text;
 
@@ -134,23 +131,22 @@ export default async function handler(
           return contentBlock;
         });
 
+        // Generate summary from first heading_3 block
         const firstTextBlock = orderedContent.find(
-          (block) => {
-            return block.type === 'heading_3' &&
-              block.rich_text &&
-              block.rich_text.length > 0;
-          }
+          (block) =>
+            block.type === 'heading_3' &&
+            block.rich_text &&
+            block.rich_text.length > 0
         );
 
         let summary = 'No summary available';
-
         if (firstTextBlock && firstTextBlock.rich_text?.length) {
           const fullText = firstTextBlock.rich_text.map(rt => rt.text).join(' ').trim();
           const words = fullText.split(/\s+/);
           summary = words.length > 20 ? words.slice(0, 20).join(' ') + '...' : fullText;
         }
 
-
+        // Calculate reading time
         const wordCount = orderedContent.reduce((count, block) => {
           if (block.rich_text) {
             const text = block.rich_text.map(rt => rt.text).join(' ');
@@ -159,9 +155,6 @@ export default async function handler(
           return count;
         }, 0);
         const readTime = `${Math.max(1, Math.round(wordCount / 70))} min read`;
-
-        // Ensure that `block.child_page?.title` is only accessed for blocks of type `child_page`
-        const title = block.type === 'child_page' ? block.child_page?.title || 'Untitled' : 'Not a child page';
 
         return {
           childPageId,
@@ -173,11 +166,25 @@ export default async function handler(
           summary,
           readTime,
           content: orderedContent,
+          category,
         };
       })
     );
 
-    res.status(200).json({ childPages: childPageDetails, totalPages });
+    // Apply optional category filter
+    const filteredPages = categoryFilter
+      ? allChildPageDetails.filter(post =>
+          post.category.toLowerCase() === categoryFilter.toLowerCase()
+        )
+      : allChildPageDetails;
+
+    const totalPosts = filteredPages.length;
+    const totalPages = Math.ceil(totalPosts / postsPerPage);
+    const currentPage = Math.min(Math.max(page, 1), totalPages);
+    const startIdx = (currentPage - 1) * postsPerPage;
+    const paginatedPages = filteredPages.slice(startIdx, startIdx + postsPerPage);
+
+    res.status(200).json({ childPages: paginatedPages, totalPages });
   } catch (error: any) {
     console.error('Error fetching Notion page content:', error.message, error);
     res.status(500).json({ error: 'Failed to fetch Notion page content' });

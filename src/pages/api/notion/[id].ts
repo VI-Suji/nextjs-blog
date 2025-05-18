@@ -7,7 +7,7 @@ import {
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 const notion = new Client({
-    auth: process.env.NOTION_API_KEY || '', // Ensure you use an environment variable for security
+    auth: process.env.NOTION_API_KEY || '',
 });
 
 type FormattedText = {
@@ -33,7 +33,7 @@ type BlogPost = {
     lastEditedTime: string;
     summary: string;
     readTime: string;
-    author: string; // Assuming you will later handle author extraction or assignment
+    author: string;
     content: BlogContentBlock[];
 };
 
