@@ -176,6 +176,10 @@ export default async function handler(
       })
     );
 
+    allChildPageDetails.sort(
+      (a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime()
+    );
+
     // Apply optional category filter
     const filteredPages = categoryFilter
       ? allChildPageDetails.filter(post =>
