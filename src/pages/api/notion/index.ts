@@ -7,9 +7,14 @@ import {
 } from '@notionhq/client/build/src/api-endpoints';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
+if (!process.env.NOTION_API_KEY) {
+  throw new Error('Missing NOTION_API_KEY environment variable');
+}
+
 const notion = new Client({
-  auth: process.env.NOTION_API_KEY || '',
+  auth: process.env.NOTION_API_KEY,
 });
+
 
 type FormattedText = {
   text: string;
