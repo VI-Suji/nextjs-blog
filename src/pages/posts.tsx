@@ -121,7 +121,7 @@ export default function Posts() {
               onClick={handlePrevPage}
             >
               <Image
-                src="/pngs/left.png"
+                src="/pngs/left-arrow.png"
                 width={30}
                 height={30}
                 alt="Left arrow"
